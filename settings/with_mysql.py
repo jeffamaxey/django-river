@@ -13,9 +13,7 @@ DATABASES = {
         'PASSWORD': 'river',
         'HOST': DB_HOST,
         'PORT': DB_PORT,
-        'TEST': {
-            'NAME': 'river' + str(uuid4()),
-        },
+        'TEST': {'NAME': f'river{str(uuid4())}'},
     }
 }
 

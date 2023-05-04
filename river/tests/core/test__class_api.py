@@ -88,16 +88,16 @@ class ClassApiTest(TestCase):
 
         authorization_policies = [AuthorizationPolicyBuilder().with_permission(authorized_permission).build()]
         FlowBuilder("my_field", self.content_type) \
-            .with_transition(state1, state2, authorization_policies) \
-            .with_objects(250) \
-            .build()
+                .with_transition(state1, state2, authorization_policies) \
+                .with_objects(250) \
+                .build()
 
         before = datetime.now()
         approvals = BasicTestModel.river.my_field.get_on_approval_objects(as_user=authorized_user)
         after = datetime.now()
         assert_that(after - before, less_than(timedelta(milliseconds=200)))
         assert_that(approvals, has_length(250))
-        print("Time taken %s" % str(after - before))
+        print(f"Time taken {str(after - before)}")
 
     def test_shouldAssesInitialStateProperly(self):
         state1 = RawState("state1")

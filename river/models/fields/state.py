@@ -35,7 +35,7 @@ class StateField(models.ForeignKey):
         self.field_name = None
         kwargs['null'] = True
         kwargs['blank'] = True
-        kwargs['to'] = '%s.%s' % (State._meta.app_label, State._meta.object_name)
+        kwargs['to'] = f'{State._meta.app_label}.{State._meta.object_name}'
         kwargs['on_delete'] = kwargs.get('on_delete', CASCADE)
         kwargs['related_name'] = "+"
         super(StateField, self).__init__(*args, **kwargs)
@@ -47,9 +47,20 @@ class StateField(models.ForeignKey):
 
         self.field_name = name
 
-        self._add_to_class(cls, self.field_name + "_transition_approvals",
-                           GenericRelation('%s.%s' % (TransitionApproval._meta.app_label, TransitionApproval._meta.object_name)))
-        self._add_to_class(cls, self.field_name + "_transitions", GenericRelation('%s.%s' % (Transition._meta.app_label, Transition._meta.object_name)))
+        self._add_to_class(
+            cls,
+            f"{self.field_name}_transition_approvals",
+            GenericRelation(
+                f'{TransitionApproval._meta.app_label}.{TransitionApproval._meta.object_name}'
+            ),
+        )
+        self._add_to_class(
+            cls,
+            f"{self.field_name}_transitions",
+            GenericRelation(
+                f'{Transition._meta.app_label}.{Transition._meta.object_name}'
+            ),
+        )
 
         if id(cls) not in workflow_registry.workflows:
             self._add_to_class(cls, "river", river)
@@ -57,8 +68,18 @@ class StateField(models.ForeignKey):
         super(StateField, self).contribute_to_class(cls, name, *args, **kwargs)
 
         if id(cls) not in workflow_registry.workflows:
-            post_save.connect(_on_workflow_object_saved, self.model, False, dispatch_uid='%s_%s_riverstatefield_post' % (self.model, name))
-            post_delete.connect(_on_workflow_object_deleted, self.model, False, dispatch_uid='%s_%s_riverstatefield_post' % (self.model, name))
+            post_save.connect(
+                _on_workflow_object_saved,
+                self.model,
+                False,
+                dispatch_uid=f'{self.model}_{name}_riverstatefield_post',
+            )
+            post_delete.connect(
+                _on_workflow_object_deleted,
+                self.model,
+                False,
+                dispatch_uid=f'{self.model}_{name}_riverstatefield_post',
+            )
 
         workflow_registry.add(self.field_name, cls)
 

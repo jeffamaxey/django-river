@@ -89,7 +89,6 @@ class FlowBuilder(object):
         states = {}
         transition_metas = []
         transitions_approval_metas = []
-        workflow_objects = []
         for additional_raw_state in self.additional_raw_states:
             state, _ = State.objects.get_or_create(label=additional_raw_state.label)
             states[state.label] = state
@@ -121,7 +120,5 @@ class FlowBuilder(object):
                     transition_approval_meta.groups.set(authorization_policy.groups)
                     transitions_approval_metas.append(transition_approval_meta)
 
-        for i in range(self.objects_count):
-            workflow_objects.append(self.object_factory())
-
+        workflow_objects = [self.object_factory() for _ in range(self.objects_count)]
         return Flow(workflow, states, transition_metas, transitions_approval_metas, workflow_objects)

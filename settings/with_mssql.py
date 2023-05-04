@@ -29,12 +29,8 @@ DATABASES = {
         'PASSWORD': DB_PASSWORD,
         'HOST': DB_HOST,
         'PORT': DB_PORT,
-        'TEST': {
-            'NAME': 'river' + str(uuid4()),
-        },
-        'OPTIONS': {
-            'driver': DB_DRIVER
-        },
+        'TEST': {'NAME': f'river{str(uuid4())}'},
+        'OPTIONS': {'driver': DB_DRIVER},
     }
 }
 

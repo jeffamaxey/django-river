@@ -15,14 +15,12 @@ class ClassWorkflowObject(object):
 
     @property
     def _river_driver(self):
-        if self._cached_river_driver:
-            return self._cached_river_driver
-        else:
+        if not self._cached_river_driver:
             if app_config.IS_MSSQL:
                 self._cached_river_driver = MsSqlDriver(self.workflow, self.wokflow_object_class, self.field_name)
             else:
                 self._cached_river_driver = OrmDriver(self.workflow, self.wokflow_object_class, self.field_name)
-            return self._cached_river_driver
+        return self._cached_river_driver
 
     def get_on_approval_objects(self, as_user):
         approvals = self.get_available_approvals(as_user)
@@ -40,8 +38,8 @@ class ClassWorkflowObject(object):
     @property
     def final_states(self):
         all_states = TransitionMeta.objects.filter(workflow=self.workflow).values_list("source_state", "destination_state")
-        source_states = set([states[0] for states in all_states])
-        destination_states = set([states[1] for states in all_states])
+        source_states = {states[0] for states in all_states}
+        destination_states = {states[1] for states in all_states}
         final_states = destination_states - source_states
         return State.objects.filter(pk__in=final_states)
 

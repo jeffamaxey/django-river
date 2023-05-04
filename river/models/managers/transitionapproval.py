@@ -9,16 +9,14 @@ class TransitionApprovalManager(RiverManager if app_config.IS_MSSQL else CTEMana
         super(TransitionApprovalManager, self).__init__(*args, **kwargs)
 
     def filter(self, *args, **kwarg):
-        workflow_object = kwarg.pop('workflow_object', None)
-        if workflow_object:
+        if workflow_object := kwarg.pop('workflow_object', None):
             kwarg['content_type'] = app_config.CONTENT_TYPE_CLASS.objects.get_for_model(workflow_object)
             kwarg['object_id'] = workflow_object.pk
 
         return super(TransitionApprovalManager, self).filter(*args, **kwarg)
 
     def update_or_create(self, *args, **kwarg):
-        workflow_object = kwarg.pop('workflow_object', None)
-        if workflow_object:
+        if workflow_object := kwarg.pop('workflow_object', None):
             kwarg['content_type'] = app_config.CONTENT_TYPE_CLASS.objects.get_for_model(workflow_object)
             kwarg['object_id'] = workflow_object.pk
 

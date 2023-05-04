@@ -61,9 +61,9 @@ class HasTransition(BaseMatcher):
         self.value_matcher = all_of(*conditions)
 
     def describe_to(self, description):
-        description.append_text("an object with a transition (%s -> %s) (%s)'" % (self.source_state, self.destination_state, self.iteration)) \
-            .append_text("' matching ") \
-            .append_description_of(self.value_matcher)
+        description.append_text(
+            f"an object with a transition ({self.source_state} -> {self.destination_state}) ({self.iteration})'"
+        ).append_text("' matching ").append_description_of(self.value_matcher)
 
     def _matches(self, item):
         if item is None:

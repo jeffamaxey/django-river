@@ -20,8 +20,4 @@ class TransitionMeta(BaseModel):
     destination_state = models.ForeignKey(State, verbose_name=_("Destination State"), related_name='transition_meta_as_destination', on_delete=PROTECT)
 
     def __str__(self):
-        return 'Field Name:%s, %s -> %s' % (
-            self.workflow,
-            self.source_state,
-            self.destination_state
-        )
+        return f'Field Name:{self.workflow}, {self.source_state} -> {self.destination_state}'

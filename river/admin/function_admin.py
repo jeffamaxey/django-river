@@ -19,7 +19,7 @@ class FunctionAdmin(admin.ModelAdmin):
     readonly_fields = ('version', 'date_created', 'date_updated')
 
     def function_version(self, obj):  # pylint: disable=no-self-use
-        return "v%s" % obj.version
+        return f"v{obj.version}"
 
 
 admin.site.register(Function, FunctionAdmin)

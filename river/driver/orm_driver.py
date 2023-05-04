@@ -35,11 +35,20 @@ class OrmDriver(RiverDriver):
             min_priority=those_with_max_priority.col.min_priority
         ).filter(min_priority=F("priority"))
 
-        return workflow_objects.join(
-            approvals_with_max_priority, object_id_as_str=Cast(workflow_objects.col.pk, CharField(max_length=200))
-        ).with_cte(
-            workflow_objects
-        ).filter(transition__source_state=getattr(workflow_objects.col, self.field_name + "_id"))
+        return (
+            workflow_objects.join(
+                approvals_with_max_priority,
+                object_id_as_str=Cast(
+                    workflow_objects.col.pk, CharField(max_length=200)
+                ),
+            )
+            .with_cte(workflow_objects)
+            .filter(
+                transition__source_state=getattr(
+                    workflow_objects.col, f"{self.field_name}_id"
+                )
+            )
+        )
 
     def _authorized_approvals(self, as_user):
         group_q = Q()

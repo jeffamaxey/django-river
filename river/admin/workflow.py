@@ -12,8 +12,13 @@ def get_workflow_choices():
     for class_id, field_names in workflow_registry.workflows.items():
         cls = class_by_id(class_id)
         content_type = ContentType.objects.get_for_model(cls)
-        for field_name in field_names:
-            result.append(("%s %s" % (content_type.pk, field_name), "%s.%s - %s" % (cls.__module__, cls.__name__, field_name)))
+        result.extend(
+            (
+                f"{content_type.pk} {field_name}",
+                f"{cls.__module__}.{cls.__name__} - {field_name}",
+            )
+            for field_name in field_names
+        )
     return result
 
 
@@ -28,7 +33,9 @@ class WorkflowForm(forms.ModelForm):
         instance = kwargs.get("instance", None)
         self.declared_fields['workflow'].choices = get_workflow_choices()
         if instance and instance.pk:
-            self.declared_fields['workflow'].initial = "%s %s" % (instance.content_type.pk, instance.field_name)
+            self.declared_fields[
+                'workflow'
+            ].initial = f"{instance.content_type.pk} {instance.field_name}"
 
         super(WorkflowForm, self).__init__(*args, **kwargs)
 
@@ -52,9 +59,8 @@ class WorkflowAdmin(admin.ModelAdmin):
     list_display = ('model_class', 'field_name', 'initial_state')
 
     def model_class(self, obj):
-        cls = obj.content_type.model_class()
-        if cls:
-            return "%s.%s" % (cls.__module__, cls.__name__)
+        if cls := obj.content_type.model_class():
+            return f"{cls.__module__}.{cls.__name__}"
         else:
             return "Class not found in the workspace"
 

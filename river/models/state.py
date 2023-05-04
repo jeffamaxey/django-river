@@ -46,10 +46,9 @@ class State(BaseModel):
 
 
 def on_pre_save(sender, instance, *args, **kwargs):
-    if not instance.slug:
-        instance.slug = slugify(instance.label)
-    else:
-        instance.slug = slugify(instance.slug)
+    instance.slug = (
+        slugify(instance.slug) if instance.slug else slugify(instance.label)
+    )
 
 
 pre_save.connect(on_pre_save, State)

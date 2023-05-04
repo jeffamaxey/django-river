@@ -28,39 +28,42 @@ class InstanceWorkflowObject(object):
 
     @transaction.atomic
     def initialize_approvals(self):
-        if not self.initialized:
-            if self.workflow and self.workflow.transition_approvals.filter(workflow_object=self.workflow_object).count() == 0:
-                transition_meta_list = self.workflow.transition_metas.filter(source_state=self.workflow.initial_state)
-                iteration = 0
-                processed_transitions = []
-                while transition_meta_list:
-                    for transition_meta in transition_meta_list:
-                        transition = Transition.objects.create(
+        if self.initialized:
+            return
+        if self.workflow and self.workflow.transition_approvals.filter(workflow_object=self.workflow_object).count() == 0:
+            transition_meta_list = self.workflow.transition_metas.filter(source_state=self.workflow.initial_state)
+            iteration = 0
+            processed_transitions = []
+            while transition_meta_list:
+                for transition_meta in transition_meta_list:
+                    transition = Transition.objects.create(
+                        workflow=self.workflow,
+                        workflow_object=self.workflow_object,
+                        source_state=transition_meta.source_state,
+                        destination_state=transition_meta.destination_state,
+                        meta=transition_meta,
+                        iteration=iteration
+                    )
+                    for transition_approval_meta in transition_meta.transition_approval_meta.all():
+                        transition_approval = TransitionApproval.objects.create(
                             workflow=self.workflow,
                             workflow_object=self.workflow_object,
-                            source_state=transition_meta.source_state,
-                            destination_state=transition_meta.destination_state,
-                            meta=transition_meta,
-                            iteration=iteration
+                            transition=transition,
+                            priority=transition_approval_meta.priority,
+                            meta=transition_approval_meta
                         )
-                        for transition_approval_meta in transition_meta.transition_approval_meta.all():
-                            transition_approval = TransitionApproval.objects.create(
-                                workflow=self.workflow,
-                                workflow_object=self.workflow_object,
-                                transition=transition,
-                                priority=transition_approval_meta.priority,
-                                meta=transition_approval_meta
-                            )
-                            transition_approval.permissions.add(*transition_approval_meta.permissions.all())
-                            transition_approval.groups.add(*transition_approval_meta.groups.all())
-                        processed_transitions.append(transition_meta.pk)
-                    transition_meta_list = self.workflow.transition_metas.filter(
-                        source_state__in=transition_meta_list.values_list("destination_state", flat=True)
-                    ).exclude(pk__in=processed_transitions)
+                        transition_approval.permissions.add(*transition_approval_meta.permissions.all())
+                        transition_approval.groups.add(*transition_approval_meta.groups.all())
+                    processed_transitions.append(transition_meta.pk)
+                transition_meta_list = self.workflow.transition_metas.filter(
+                    source_state__in=transition_meta_list.values_list("destination_state", flat=True)
+                ).exclude(pk__in=processed_transitions)
 
-                    iteration += 1
-                self.initialized = True
-                LOGGER.debug("Transition approvals are initialized for the workflow object %s" % self.workflow_object)
+                iteration += 1
+            self.initialized = True
+            LOGGER.debug(
+                f"Transition approvals are initialized for the workflow object {self.workflow_object}"
+            )
 
     @property
     def on_initial_state(self):
@@ -78,7 +81,13 @@ class InstanceWorkflowObject(object):
     @property
     def recent_approval(self):
         try:
-            return getattr(self.workflow_object, self.field_name + "_transition_approvals").filter(transaction_date__isnull=False).latest('transaction_date')
+            return (
+                getattr(
+                    self.workflow_object, f"{self.field_name}_transition_approvals"
+                )
+                .filter(transaction_date__isnull=False)
+                .latest('transaction_date')
+            )
         except TransitionApproval.DoesNotExist:
             return None
 
@@ -89,9 +98,15 @@ class InstanceWorkflowObject(object):
 
         try:
             recent_iteration = self.recent_approval.transition.iteration if self.recent_approval else 0
-            jumped_transition = getattr(self.workflow_object, self.field_name + "_transitions").filter(
-                iteration__gte=recent_iteration, destination_state=state, status=PENDING
-            ).earliest("iteration")
+            jumped_transition = (
+                getattr(self.workflow_object, f"{self.field_name}_transitions")
+                .filter(
+                    iteration__gte=recent_iteration,
+                    destination_state=state,
+                    status=PENDING,
+                )
+                .earliest("iteration")
+            )
 
             jumped_transitions = _transitions_before(jumped_transition.iteration).filter(status=PENDING)
             for approval in TransitionApproval.objects.filter(pk__in=jumped_transitions.values_list("transition_approvals__pk", flat=True)):
@@ -125,9 +140,11 @@ class InstanceWorkflowObject(object):
             available_approvals = available_approvals.filter(transition__destination_state=next_state)
             if available_approvals.count() == 0:
                 available_states = self.get_available_states(as_user)
-                raise RiverException(ErrorCode.INVALID_NEXT_STATE_FOR_USER, "Invalid state is given(%s). Valid states is(are) %s" % (
-                    next_state.__str__(), ','.join([ast.__str__() for ast in available_states])))
-        elif number_of_available_approvals > 1 and not next_state:
+                raise RiverException(
+                    ErrorCode.INVALID_NEXT_STATE_FOR_USER,
+                    f"Invalid state is given({next_state.__str__()}). Valid states is(are) {','.join([ast.__str__() for ast in available_states])}",
+                )
+        elif number_of_available_approvals > 1:
             raise RiverException(ErrorCode.NEXT_STATE_IS_REQUIRED, "State must be given when there are multiple states for destination")
 
         approval = available_approvals.first()
@@ -149,8 +166,9 @@ class InstanceWorkflowObject(object):
             has_transit = True
             if self._check_if_it_cycled(approval.transition):
                 self._re_create_cycled_path(approval.transition)
-            LOGGER.debug("Workflow object %s is proceeded for next transition. Transition: %s -> %s" % (
-                self.workflow_object, previous_state, self.get_state()))
+            LOGGER.debug(
+                f"Workflow object {self.workflow_object} is proceeded for next transition. Transition: {previous_state} -> {self.get_state()}"
+            )
 
         with self._approve_signal(approval), self._transition_signal(has_transit, approval), self._on_complete_signal():
             self.workflow_object.save()

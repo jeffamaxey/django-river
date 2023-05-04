@@ -29,18 +29,18 @@ from django.test import TestCase
 _author_ = 'ahmetdal'
 
 MIGRATION_TEST_ENABLED = (
-    not django.VERSION[0] >= 2,
-    "Is not able to run with new version of django and sqlite3"
+    django.VERSION[0] < 2,
+    "Is not able to run with new version of django and sqlite3",
 )
 
 
 def clean_migrations():
     for f in os.listdir("river/tests/volatile/river/"):
-        if f != "__init__.py" and f != "__pycache__":
+        if f not in ["__init__.py", "__pycache__"]:
             os.remove(os.path.join("river/tests/volatile/river/", f))
 
     for f in os.listdir("river/tests/volatile/river_tests/"):
-        if f != "__init__.py" and f != "__pycache__":
+        if f not in ["__init__.py", "__pycache__"]:
             os.remove(os.path.join("river/tests/volatile/river_tests/", f))
 
 
@@ -120,7 +120,9 @@ class MigrationTests(TestCase):
         workflow_object = BasicTestModelObjectFactory()
 
         with connection.cursor() as cur:
-            result = cur.execute("select status from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select status from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result[0][0], equal_to("pending"))
 
         call_command('migrate', 'river', '0004', stdout=out)
@@ -130,7 +132,9 @@ class MigrationTests(TestCase):
             status_col_type = list(filter(lambda column: column[1] == 'status', schema))[0][2]
             assert_that(status_col_type, equal_to("integer"))
 
-            result = cur.execute("select status from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select status from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result[0][0], equal_to(0))
 
         call_command('migrate', 'river', '0005', stdout=out)
@@ -140,7 +144,9 @@ class MigrationTests(TestCase):
             status_col_type = list(filter(lambda column: column[1] == 'status', schema))[0][2]
             assert_that(status_col_type, equal_to("varchar(100)"))
 
-            result = cur.execute("select status from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select status from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result[0][0], equal_to("pending"))
 
     @skipUnless(*MIGRATION_TEST_ENABLED)
@@ -222,7 +228,9 @@ class MigrationTests(TestCase):
         call_command('migrate', 'river', '0007', stdout=out)
 
         with connection.cursor() as cur:
-            result = cur.execute("select meta_id, iteration from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select meta_id, iteration from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result, has_length(4))
             assert_that(result, has_item(equal_to((meta_1.pk, 0))))
             assert_that(result, has_item(equal_to((meta_2.pk, 1))))
@@ -352,7 +360,9 @@ class MigrationTests(TestCase):
         call_command('migrate', 'river', '0007', stdout=out)
 
         with connection.cursor() as cur:
-            result = cur.execute("select meta_id, iteration from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select meta_id, iteration from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result, has_length(10))
             assert_that(result, has_item(equal_to((meta_1.pk, 0))))
             assert_that(result, has_item(equal_to((meta_21.pk, 1))))
@@ -567,7 +577,9 @@ class MigrationTests(TestCase):
         call_command('migrate', 'river', '0007', stdout=out)
 
         with connection.cursor() as cur:
-            result = cur.execute("select meta_id, iteration from river_transitionapproval where object_id=%s;" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select meta_id, iteration from river_transitionapproval where object_id={workflow_object.model.pk};"
+            ).fetchall()
             assert_that(result, has_length(11))
             assert_that(result, has_item(equal_to((open_to_in_progress.pk, 0))))
             assert_that(result, has_item(equal_to((in_progress_to_resolved.pk, 1))))
@@ -629,7 +641,9 @@ class MigrationTests(TestCase):
             assert_that(result, has_item(equal_to((meta_3.pk, transition_2.pk))))
             assert_that(result, has_item(equal_to((meta_4.pk, transition_3.pk))))
 
-            result = cur.execute("select id, transition_id from river_transitionapproval where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select id, transition_id from river_transitionapproval where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(4))
             assert_that(result, has_item(equal_to((meta_1.transition_approvals.first().pk, transition_1.transitions.first().pk))))
             assert_that(result, has_item(equal_to((meta_2.transition_approvals.first().pk, transition_2.transitions.first().pk))))
@@ -674,7 +688,9 @@ class MigrationTests(TestCase):
             assert_that(result, has_item(equal_to((meta_3.pk, transition_2.pk))))
             assert_that(result, has_item(equal_to((meta_4.pk, transition_3.pk))))
 
-            result = cur.execute("select id, transition_id from river_transitionapproval where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select id, transition_id from river_transitionapproval where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(4))
             assert_that(result, has_item(equal_to((meta_1.transition_approvals.first().pk, transition_1.transitions.first().pk))))
             assert_that(result, has_item(equal_to((meta_2.transition_approvals.first().pk, transition_2.transitions.first().pk))))
@@ -749,15 +765,21 @@ class MigrationTests(TestCase):
             column_type = next(iter([column[2] for column in schema if column[1] == 'object_id']), None)
             assert_that(column_type, equal_to("integer unsigned"))
 
-            result = cur.execute("select object_id from river_onapprovedhook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_onapprovedhook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(workflow_object.model.pk))
 
-            result = cur.execute("select object_id from river_ontransithook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_ontransithook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(workflow_object.model.pk))
 
-            result = cur.execute("select object_id from river_oncompletehook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_oncompletehook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(workflow_object.model.pk))
 
@@ -776,14 +798,20 @@ class MigrationTests(TestCase):
             column_type = next(iter([column[2] for column in schema if column[1] == 'object_id']), None)
             assert_that(column_type, equal_to("varchar(200)"))
 
-            result = cur.execute("select object_id from river_onapprovedhook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_onapprovedhook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(str(workflow_object.model.pk)))
 
-            result = cur.execute("select object_id from river_ontransithook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_ontransithook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(str(workflow_object.model.pk)))
 
-            result = cur.execute("select object_id from river_oncompletehook where object_id='%s';" % workflow_object.model.pk).fetchall()
+            result = cur.execute(
+                f"select object_id from river_oncompletehook where object_id='{workflow_object.model.pk}';"
+            ).fetchall()
             assert_that(result, has_length(1))
             assert_that(result[0][0], equal_to(str(workflow_object.model.pk)))

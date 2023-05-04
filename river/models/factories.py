@@ -8,11 +8,14 @@ from river.models.state import State
 from river.models.transitionapprovalmeta import TransitionApprovalMeta
 
 
+
+
 class ContentTypeObjectFactory(DjangoModelFactory):
+
     class Meta:
         model = ContentType
 
-    model = factory.Sequence(lambda n: 'ect_model_%s' % n)
+    model = factory.Sequence(lambda n: f'ect_model_{n}')
 
 
 class UserObjectFactory(factory.DjangoModelFactory):
@@ -63,20 +66,26 @@ class GroupObjectFactory(factory.DjangoModelFactory):
 
 
 class PermissionObjectFactory(factory.DjangoModelFactory):
+
     class Meta:
         model = 'auth.Permission'
 
-    name = factory.Sequence(lambda n: 'Permission_%s' % n)
-    codename = factory.Sequence(lambda n: 'Codename_%s' % n)
+    name = factory.Sequence(lambda n: f'Permission_{n}')
+    codename = factory.Sequence(lambda n: f'Codename_{n}')
     content_type = factory.SubFactory(ContentTypeObjectFactory)
 
 
+
+
+
 class StateObjectFactory(DjangoModelFactory):
+
     class Meta:
         model = State
 
-    label = factory.Sequence(lambda n: 's%s' % n)
-    description = factory.Sequence(lambda n: 'desc_%s' % n)
+    label = factory.Sequence(lambda n: f's{n}')
+    description = factory.Sequence(lambda n: f'desc_{n}')
+
 
 
 class WorkflowFactory(DjangoModelFactory):

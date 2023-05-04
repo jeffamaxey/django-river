@@ -18,6 +18,6 @@ class ModelWithTwoStateFieldsObjectFactory(object):
 
     @staticmethod
     def create_batch(size):
-        for i in range(size):
+        for _ in range(size):
             ModelWithTwoStateFields.objects.create()
         return ModelWithTwoStateFields.objects.all()

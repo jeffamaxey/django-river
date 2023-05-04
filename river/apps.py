@@ -18,7 +18,9 @@ class RiverApp(AppConfig):
             try:
                 workflows = self.get_model('Workflow').objects.filter(field_name=field_name)
                 if workflows.count() == 0:
-                    LOGGER.warning("%s field doesn't seem have any workflow defined in database. You should create its workflow" % field_name)
+                    LOGGER.warning(
+                        f"{field_name} field doesn't seem have any workflow defined in database. You should create its workflow"
+                    )
             except (OperationalError, ProgrammingError):
                 pass
 
@@ -50,8 +52,7 @@ class RiverApp(AppConfig):
         from river.core.workflowregistry import workflow_registry
         from river.admin import OnApprovedHookInline, OnTransitHookInline, OnCompleteHookInline, DefaultWorkflowModelAdmin
 
-        registered_admin = admin.site._registry.get(model, None)
-        if registered_admin:
+        if registered_admin := admin.site._registry.get(model, None):
             if OnApprovedHookInline not in registered_admin.inlines:
                 registered_admin.inlines = list(set(registered_admin.inlines + [OnApprovedHookInline, OnTransitHookInline, OnCompleteHookInline]))
                 registered_admin.readonly_fields = list(set(list(registered_admin.readonly_fields) + list(workflow_registry.get_class_fields(model))))
